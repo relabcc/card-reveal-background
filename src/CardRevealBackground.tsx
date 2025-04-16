@@ -11,6 +11,7 @@ interface CardRevealBackgroundProps {
   animationDuration?: number;
   animationPattern?: 'center' | 'topLeft' | 'random';
   delayBetweenCards?: number;
+  stage?: 'initial' | 'reveal';
   onAnimationComplete?: () => void;
 }
 
@@ -50,7 +51,8 @@ const calculateDelay = (
   col: number,
   gridSize: { rows: number; columns: number },
   pattern: 'center' | 'topLeft' | 'random',
-  delayBetweenCards: number
+  delayBetweenCards: number,
+  stage: 'initial' | 'reveal'
 ) => {
   switch (pattern) {
     case 'center': {
@@ -65,7 +67,21 @@ const calculateDelay = (
       return (row + col) * delayBetweenCards;
     }
     case 'random': {
-      return Math.random() * delayBetweenCards * Math.max(gridSize.rows, gridSize.columns);
+      const centerRow = Math.floor(gridSize.rows / 2);
+      const centerCol = Math.floor(gridSize.columns / 2);
+      
+      // 如果是中心卡片，延遲為 0
+      if (row === centerRow && col === centerCol) {
+        return 0;
+      }
+      
+      // 其他卡片根據階段決定延遲
+      if (stage === 'initial') {
+        return Infinity; // 在初始階段不顯示其他卡片
+      } else {
+        // 在 reveal 階段，確保卡片能夠顯示
+        return Math.random() * delayBetweenCards * Math.max(gridSize.rows, gridSize.columns);
+      }
     }
     default:
       return 0;
@@ -81,16 +97,23 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   animationDuration = 0.5,
   animationPattern = 'center',
   delayBetweenCards = 0.15,
+  stage = 'initial',
   onAnimationComplete
 }) => {
   const [cards, setCards] = useState<{ row: number; col: number; delay: number }[]>([]);
+  const [currentStage, setCurrentStage] = useState(stage);
+
+  // 當 stage prop 改變時，更新內部狀態
+  useEffect(() => {
+    setCurrentStage(stage);
+  }, [stage]);
 
   useEffect(() => {
     const newCards = [];
     
     for (let row = 0; row < gridSize.rows; row++) {
       for (let col = 0; col < gridSize.columns; col++) {
-        const delay = calculateDelay(row, col, gridSize, animationPattern, delayBetweenCards);
+        const delay = calculateDelay(row, col, gridSize, animationPattern, delayBetweenCards, currentStage);
         newCards.push({ row, col, delay });
       }
     }
@@ -101,7 +124,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
     }
     
     setCards(newCards);
-  }, [gridSize, animationPattern, delayBetweenCards]);
+  }, [gridSize, animationPattern, delayBetweenCards, currentStage]);
 
   return (
     <Container backgroundImage={backgroundImage}>
@@ -121,11 +144,11 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
               opacity: 0,
             }}
             animate={{ 
-              opacity: 1,
+              opacity: delay === Infinity ? 0 : 1,
             }}
             transition={{
               duration: animationDuration,
-              delay: delay,
+              delay: delay === Infinity ? 0 : delay,
               ease: "easeOut"
             }}
             onAnimationComplete={() => {

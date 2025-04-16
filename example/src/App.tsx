@@ -18,6 +18,7 @@ function App() {
     "center" | "topLeft" | "random"
   >("random");
   const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
+  const [stage, setStage] = useState<"initial" | "reveal">("initial");
 
   const renderKey = [
     selectedImage,
@@ -59,6 +60,16 @@ function App() {
             <option value="center">從中心開始</option>
             <option value="topLeft">從左上角開始</option>
             <option value="random">隨機順序</option>
+          </select>
+        </label>
+        <label>
+          動畫階段：
+          <select
+            value={stage}
+            onChange={(e) => setStage(e.target.value as "initial" | "reveal")}
+          >
+            <option value="initial">初始階段</option>
+            <option value="reveal">顯示剩餘卡片</option>
           </select>
         </label>
         <label>
@@ -134,6 +145,7 @@ function App() {
           animationDuration={animationDuration}
           animationPattern={animationPattern}
           delayBetweenCards={delayBetweenCards}
+          stage={stage}
           onAnimationComplete={() => console.log("Animation completed!")}
         />
       </div>
