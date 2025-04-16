@@ -1,6 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import styled from '@emotion/styled';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from "react";
+import styled from "@emotion/styled";
+import { motion, AnimatePresence } from "framer-motion";
+
+// 內部使用的樣式常數
+const STYLE_CONSTANTS = {
+  BORDER_SIZE_COEFFICIENT: 0.15,
+} as const;
 
 interface CardRevealBackgroundProps {
   backgroundImage: string;
@@ -9,20 +14,20 @@ interface CardRevealBackgroundProps {
   cardBorderColor?: string;
   cardBorderWidth?: number;
   animationDuration?: number;
-  animationPattern?: 'center' | 'topLeft' | 'random';
+  animationPattern?: "center" | "topLeft" | "random";
   delayBetweenCards?: number;
-  stage?: 'initial' | 'reveal';
+  stage?: "initial" | "reveal";
   overlayText?: string;
   overlayTextSize?: number;
   onAnimationComplete?: () => void;
 }
 
-const Container = styled.div<{ 
+const Container = styled.div<{
   backgroundImage: string;
   aspectRatio: number;
 }>`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   position: relative;
   overflow: hidden;
   background: black;
@@ -33,28 +38,28 @@ const Container = styled.div<{
 
 /**
  * 關於圖片填充的處理歷程：
- * 
+ *
  * 1. 最初問題：
  *    - 需要在保持圖片比例的同時填滿整個視窗
  *    - 不能有留白
  *    - 不能失真
- * 
+ *
  * 2. 嘗試過的方案：
  *    a) 使用 background-size: cover：
  *       結果：每個卡片獨立顯示圖片，無法形成完整拼圖
- * 
+ *
  *    b) 使用固定寬高比：
  *       結果：在不同螢幕尺寸下會失真
- * 
+ *
  *    c) 使用 scale(1.1)：
  *       結果：這是一種取巧方式，並非真正解決問題
- * 
+ *
  * 3. 當前方案（2024/03）：
  *    - 使用 max/min 函數根據視窗比例動態調整
  *    - 當前結果：
  *      * 畫面較寬時：成功！圖片填滿且不失真
  *      * 畫面較窄時：圖片不失真，但上下有留白
- * 
+ *
  * 4. 注意事項：
  *    - 不要再回到「圖片填滿但失真」的方案
  *    - 不要再回到「完全不失真但有留白」的方案
@@ -62,26 +67,35 @@ const Container = styled.div<{
  */
 const CardsContainer = styled.div<{
   aspectRatio: number;
+  viewportRatio: number;
+  viewportHeight: number;
+  viewportWidth: number;
 }>`
   position: relative;
-  width: ${props => {
-    const viewportRatio = window.innerWidth / window.innerHeight;
+  width: ${(props) => {
     const widthFromHeight = `${props.aspectRatio * 100}vh`;
-    const fullWidth = '100vw';
-    // 當視窗較寬時用max，較窄時用min
-    return viewportRatio > props.aspectRatio
+    const fullWidth = "100vw";
+    return props.viewportRatio > props.aspectRatio
       ? `max(${widthFromHeight}, ${fullWidth})`
       : `min(${widthFromHeight}, ${fullWidth})`;
   }};
-  height: ${props => {
-    const viewportRatio = window.innerWidth / window.innerHeight;
+  height: ${(props) => {
     const heightFromWidth = `${100 / props.aspectRatio}vw`;
-    const fullHeight = '100vh';
-    // 當視窗較寬時用max，較窄時用min
-    return viewportRatio > props.aspectRatio
+    const fullHeight = "100vh";
+    return props.viewportRatio > props.aspectRatio
       ? `max(${heightFromWidth}, ${fullHeight})`
       : `min(${heightFromWidth}, ${fullHeight})`;
   }};
+  transform: ${(props) => {
+    if (props.viewportRatio < props.aspectRatio) {
+      // 當畫面較窄時，計算需要的縮放比例
+      const actualHeight = props.viewportWidth / props.aspectRatio;
+      const scale = props.viewportHeight / actualHeight;
+      return `scale(${scale})`;
+    }
+    return "none";
+  }};
+  transform-origin: center;
 `;
 
 const Card = styled(motion.div)<{
@@ -96,12 +110,16 @@ const Card = styled(motion.div)<{
   overlayTextSize: number;
 }>`
   position: absolute;
-  width: ${props => `${100 / props.totalCols}%`};
-  height: ${props => `${100 / props.totalRows}%`};
-  left: ${props => `${(props.col / props.totalCols) * 100}%`};
-  top: ${props => `${(props.row / props.totalRows) * 100}%`};
-  border: ${props => `${props.borderWidth}px solid ${props.borderColor}`};
-  border-radius: ${props => `${props.borderRadius}px`};
+  width: ${(props) => `${100 / props.totalCols}%`};
+  height: ${(props) => `${100 / props.totalRows}%`};
+  left: ${(props) => `${(props.col / props.totalCols) * 100}%`};
+  top: ${(props) => `${(props.row / props.totalRows) * 100}%`};
+  border: ${(props) =>
+    `${props.borderWidth * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT}cqw solid ${
+      props.borderColor
+    }`};
+  border-radius: ${(props) =>
+    `${props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT}cqw`};
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -112,20 +130,20 @@ const Card = styled(motion.div)<{
   overflow: hidden;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
-    top: -${props => props.row * 100}%;
-    left: -${props => props.col * 100}%;
-    width: ${props => props.totalCols * 100}%;
-    height: ${props => props.totalRows * 100}%;
-    background-image: url(${props => props.backgroundImage});
+    top: -${(props) => props.row * 100}%;
+    left: -${(props) => props.col * 100}%;
+    width: ${(props) => props.totalCols * 100}%;
+    height: ${(props) => props.totalRows * 100}%;
+    background-image: url(${(props) => props.backgroundImage});
     background-size: 100% 100%;
     z-index: 0;
   }
 
   &::before {
     content: attr(data-text);
-    font-size: ${props => `${props.overlayTextSize}cqw`};
+    font-size: ${(props) => `${props.overlayTextSize}cqw`};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -140,12 +158,12 @@ const calculateDelay = (
   row: number,
   col: number,
   gridSize: { rows: number; columns: number },
-  pattern: 'center' | 'topLeft' | 'random',
+  pattern: "center" | "topLeft" | "random",
   delayBetweenCards: number,
-  stage: 'initial' | 'reveal'
+  stage: "initial" | "reveal"
 ) => {
   switch (pattern) {
-    case 'center': {
+    case "center": {
       const centerRow = (gridSize.rows - 1) / 2;
       const centerCol = (gridSize.columns - 1) / 2;
       const distance = Math.sqrt(
@@ -153,24 +171,28 @@ const calculateDelay = (
       );
       return distance * delayBetweenCards;
     }
-    case 'topLeft': {
+    case "topLeft": {
       return (row + col) * delayBetweenCards;
     }
-    case 'random': {
+    case "random": {
       const centerRow = Math.floor(gridSize.rows / 2);
       const centerCol = Math.floor(gridSize.columns / 2);
-      
+
       // 如果是中心卡片，延遲為 0
       if (row === centerRow && col === centerCol) {
         return 0;
       }
-      
+
       // 其他卡片根據階段決定延遲
-      if (stage === 'initial') {
+      if (stage === "initial") {
         return Infinity; // 在初始階段不顯示其他卡片
       } else {
         // 在 reveal 階段，確保卡片能夠顯示
-        return Math.random() * delayBetweenCards * Math.max(gridSize.rows, gridSize.columns);
+        return (
+          Math.random() *
+          delayBetweenCards *
+          Math.max(gridSize.rows, gridSize.columns)
+        );
       }
     }
     default:
@@ -182,24 +204,42 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   backgroundImage,
   gridSize = { rows: 4, columns: 4 },
   cardBorderRadius = 8,
-  cardBorderColor = '#ffffff',
+  cardBorderColor = "#ffffff",
   cardBorderWidth = 2,
   animationDuration = 0.5,
-  animationPattern = 'center',
+  animationPattern = "center",
   delayBetweenCards = 0.15,
-  stage = 'initial',
+  stage = "initial",
   overlayText,
   overlayTextSize = 50,
-  onAnimationComplete
+  onAnimationComplete,
 }) => {
-  const [cards, setCards] = useState<{ row: number; col: number; delay: number }[]>([]);
+  const [cards, setCards] = useState<
+    { row: number; col: number; delay: number }[]
+  >([]);
   const [currentStage, setCurrentStage] = useState(stage);
-  const [imageAspectRatio, setImageAspectRatio] = useState(16/9); // 預設值
+  const [imageAspectRatio, setImageAspectRatio] = useState(16 / 9);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
-  const [windowSize, setWindowSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight
-  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const updateSize = () => {
+        setViewportSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      };
+
+      updateSize();
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }
+  }, []);
+
+  // 計算 viewport ratio
+  const viewportRatio = viewportSize.height
+    ? viewportSize.width / viewportSize.height
+    : 9 / 16;
 
   useEffect(() => {
     // 載入圖片並獲取其實際比例
@@ -216,36 +256,36 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
 
   useEffect(() => {
     const newCards = [];
-    
+
     for (let row = 0; row < gridSize.rows; row++) {
       for (let col = 0; col < gridSize.columns; col++) {
-        const delay = calculateDelay(row, col, gridSize, animationPattern, delayBetweenCards, currentStage);
+        const delay = calculateDelay(
+          row,
+          col,
+          gridSize,
+          animationPattern,
+          delayBetweenCards,
+          currentStage
+        );
         newCards.push({ row, col, delay });
       }
     }
 
-    if (animationPattern === 'random') {
+    if (animationPattern === "random") {
       newCards.sort((a, b) => a.delay - b.delay);
     }
-    
+
     setCards(newCards);
   }, [gridSize, animationPattern, delayBetweenCards, currentStage]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <Container backgroundImage={backgroundImage} aspectRatio={imageAspectRatio}>
-      <CardsContainer aspectRatio={imageAspectRatio}>
+      <CardsContainer
+        aspectRatio={imageAspectRatio}
+        viewportRatio={viewportRatio}
+        viewportHeight={viewportSize.height}
+        viewportWidth={viewportSize.width}
+      >
         <AnimatePresence>
           {cards.map(({ row, col, delay }) => (
             <Card
@@ -260,16 +300,12 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
               borderWidth={cardBorderWidth}
               overlayTextSize={overlayTextSize}
               data-text={overlayText}
-              initial={{ 
-                opacity: 0,
-              }}
-              animate={{ 
-                opacity: delay === Infinity ? 0 : 1,
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: delay === Infinity ? 0 : 1 }}
               transition={{
                 duration: animationDuration,
                 delay: delay === Infinity ? 0 : delay,
-                ease: "easeOut"
+                ease: "easeOut",
               }}
               onAnimationComplete={() => {
                 if (row === gridSize.rows - 1 && col === gridSize.columns - 1) {
@@ -284,4 +320,4 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   );
 };
 
-export default CardRevealBackground; 
+export default CardRevealBackground;

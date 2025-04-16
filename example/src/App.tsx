@@ -12,7 +12,7 @@ function App() {
   const [rows, setRows] = useState(3);
   const [columns, setColumns] = useState(3);
   const [borderRadius, setBorderRadius] = useState(10);
-  const [borderWidth, setBorderWidth] = useState(4);
+  const [borderWidth, setBorderWidth] = useState(3);
   const [animationDuration, setAnimationDuration] = useState(1);
   const [animationPattern, setAnimationPattern] = useState<
     "center" | "topLeft" | "random"
