@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CardRevealBackground } from "../../src";
+import { CardRevealBackground, STAGES, Stage } from "../../src";
 
 const DEFAULT_IMAGES = [
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
@@ -18,7 +18,7 @@ function App() {
     "center" | "topLeft" | "random"
   >("random");
   const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
-  const [stage, setStage] = useState<"initial" | "reveal">("initial");
+  const [stage, setStage] = useState<Stage>(STAGES.INITIAL);
   const [overlayText, setOverlayText] = useState("?");
   const [overlayTextSize, setOverlayTextSize] = useState(50);
 
@@ -27,7 +27,7 @@ function App() {
     if (windowWidth < 768) {
       setColumns(3);
     } else {
-      setColumns(9);
+      setColumns(7);
     }
   }, []);
 
