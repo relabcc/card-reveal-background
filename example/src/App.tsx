@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CardRevealBackground } from "../../src";
 
 const DEFAULT_IMAGES = [
@@ -10,15 +10,26 @@ const DEFAULT_IMAGES = [
 function App() {
   const [selectedImage, setSelectedImage] = useState(DEFAULT_IMAGES[0]);
   const [rows, setRows] = useState(3);
-  const [columns, setColumns] = useState(9);
-  const [borderRadius, setBorderRadius] = useState(8);
-  const [borderWidth, setBorderWidth] = useState(3);
+  const [columns, setColumns] = useState(3);
+  const [borderRadius, setBorderRadius] = useState(10);
+  const [borderWidth, setBorderWidth] = useState(4);
   const [animationDuration, setAnimationDuration] = useState(1);
   const [animationPattern, setAnimationPattern] = useState<
     "center" | "topLeft" | "random"
   >("random");
   const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
   const [stage, setStage] = useState<"initial" | "reveal">("initial");
+  const [overlayText, setOverlayText] = useState("?");
+  const [overlayTextSize, setOverlayTextSize] = useState(50);
+
+  useEffect(() => {
+    const windowWidth = window.innerWidth;
+    if (windowWidth < 768) {
+      setColumns(3);
+    } else {
+      setColumns(9);
+    }
+  }, []);
 
   const renderKey = [
     selectedImage,
@@ -62,7 +73,7 @@ function App() {
             <option value="random">隨機順序</option>
           </select>
         </label>
-        <label>
+        {/* <label>
           動畫階段：
           <select
             value={stage}
@@ -71,6 +82,26 @@ function App() {
             <option value="initial">初始階段</option>
             <option value="reveal">顯示剩餘卡片</option>
           </select>
+        </label> */}
+        <label>
+          覆蓋文字：
+          <input
+            type="text"
+            value={overlayText}
+            onChange={(e) => setOverlayText(e.target.value)}
+            placeholder="輸入要顯示的文字"
+          />
+        </label>
+        <label>
+          文字大小：
+          <input
+            type="number"
+            min="10"
+            max="100"
+            value={overlayTextSize}
+            onChange={(e) => setOverlayTextSize(Number(e.target.value))}
+          />
+          %
         </label>
         <label>
           列數：
@@ -135,7 +166,10 @@ function App() {
           />
         </label>
       </div>
-      <div className="card-container">
+      <div
+        className="card-container"
+        onClick={() => setStage(stage === "initial" ? "reveal" : "initial")}
+      >
         <CardRevealBackground
           key={renderKey}
           backgroundImage={selectedImage}
@@ -146,6 +180,8 @@ function App() {
           animationPattern={animationPattern}
           delayBetweenCards={delayBetweenCards}
           stage={stage}
+          overlayText={overlayText}
+          overlayTextSize={overlayTextSize}
           onAnimationComplete={() => console.log("Animation completed!")}
         />
       </div>

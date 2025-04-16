@@ -12,6 +12,8 @@ interface CardRevealBackgroundProps {
   animationPattern?: 'center' | 'topLeft' | 'random';
   delayBetweenCards?: number;
   stage?: 'initial' | 'reveal';
+  overlayText?: string;
+  overlayTextSize?: number;
   onAnimationComplete?: () => void;
 }
 
@@ -32,6 +34,7 @@ const Card = styled(motion.div)<{
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
+  overlayTextSize: number;
 }>`
   position: absolute;
   background-image: url(${props => props.backgroundImage});
@@ -44,6 +47,22 @@ const Card = styled(motion.div)<{
   border: ${props => `${props.borderWidth}px solid ${props.borderColor}`};
   border-radius: ${props => `${props.borderRadius}px`};
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  container-type: size;
+
+  &::before {
+    content: attr(data-text);
+    font-size: ${props => `${props.overlayTextSize}cqw`};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
 `;
 
 const calculateDelay = (
@@ -98,6 +117,8 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   animationPattern = 'center',
   delayBetweenCards = 0.15,
   stage = 'initial',
+  overlayText,
+  overlayTextSize = 50,
   onAnimationComplete
 }) => {
   const [cards, setCards] = useState<{ row: number; col: number; delay: number }[]>([]);
@@ -140,6 +161,8 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
             borderRadius={cardBorderRadius}
             borderColor={cardBorderColor}
             borderWidth={cardBorderWidth}
+            overlayTextSize={overlayTextSize}
+            data-text={overlayText}
             initial={{ 
               opacity: 0,
             }}
