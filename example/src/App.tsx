@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
-import { CardRevealBackground } from '../../src';
+import React, { useState } from "react";
+import { CardRevealBackground } from "../../src";
 
 const DEFAULT_IMAGES = [
-  'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e',
-  'https://images.unsplash.com/photo-1501854140801-50d01698950b',
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e",
+  "https://images.unsplash.com/photo-1501854140801-50d01698950b",
 ];
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(DEFAULT_IMAGES[0]);
-  const [rows, setRows] = useState(4);
-  const [columns, setColumns] = useState(4);
+  const [rows, setRows] = useState(3);
+  const [columns, setColumns] = useState(9);
   const [borderRadius, setBorderRadius] = useState(8);
-  const [borderWidth, setBorderWidth] = useState(2);
-  const [animationDuration, setAnimationDuration] = useState(0.5);
-  const [animationPattern, setAnimationPattern] = useState<'center' | 'topLeft' | 'random'>('center');
-  const [delayBetweenCards, setDelayBetweenCards] = useState(0.15);
+  const [borderWidth, setBorderWidth] = useState(3);
+  const [animationDuration, setAnimationDuration] = useState(1);
+  const [animationPattern, setAnimationPattern] = useState<
+    "center" | "topLeft" | "random"
+  >("random");
+  const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
 
   const renderKey = [
     selectedImage,
@@ -25,15 +27,16 @@ function App() {
     borderWidth,
     animationDuration,
     animationPattern,
-  ].join('-');
+    delayBetweenCards,
+  ].join("-");
 
   return (
-    <div>
+    <>
       <div className="controls">
         <label>
           背景圖片：
-          <select 
-            value={selectedImage} 
+          <select
+            value={selectedImage}
             onChange={(e) => setSelectedImage(e.target.value)}
           >
             {DEFAULT_IMAGES.map((img, index) => (
@@ -47,7 +50,11 @@ function App() {
           動畫模式：
           <select
             value={animationPattern}
-            onChange={(e) => setAnimationPattern(e.target.value as 'center' | 'topLeft' | 'random')}
+            onChange={(e) =>
+              setAnimationPattern(
+                e.target.value as "center" | "topLeft" | "random"
+              )
+            }
           >
             <option value="center">從中心開始</option>
             <option value="topLeft">從左上角開始</option>
@@ -117,20 +124,21 @@ function App() {
           />
         </label>
       </div>
-
-      <CardRevealBackground
-        key={renderKey}
-        backgroundImage={selectedImage}
-        gridSize={{ rows, columns }}
-        cardBorderRadius={borderRadius}
-        cardBorderWidth={borderWidth}
-        animationDuration={animationDuration}
-        animationPattern={animationPattern}
-        delayBetweenCards={delayBetweenCards}
-        onAnimationComplete={() => console.log('Animation completed!')}
-      />
-    </div>
+      <div className="card-container">
+        <CardRevealBackground
+          key={renderKey}
+          backgroundImage={selectedImage}
+          gridSize={{ rows, columns }}
+          cardBorderRadius={borderRadius}
+          cardBorderWidth={borderWidth}
+          animationDuration={animationDuration}
+          animationPattern={animationPattern}
+          delayBetweenCards={delayBetweenCards}
+          onAnimationComplete={() => console.log("Animation completed!")}
+        />
+      </div>
+    </>
   );
 }
 
-export default App; 
+export default App;
