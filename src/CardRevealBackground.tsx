@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // 內部使用的樣式常數
 const STYLE_CONSTANTS = {
   BORDER_SIZE_COEFFICIENT: 0.15,
+  DEFAULT_IMAGE_ASPECT_RATIO: 9 / 16,
 } as const;
 
 interface CardRevealBackgroundProps {
@@ -36,61 +37,19 @@ const Container = styled.div<{
   justify-content: center;
 `;
 
-/**
- * 關於圖片填充的處理歷程：
- *
- * 1. 最初問題：
- *    - 需要在保持圖片比例的同時填滿整個視窗
- *    - 不能有留白
- *    - 不能失真
- *
- * 2. 嘗試過的方案：
- *    a) 使用 background-size: cover：
- *       結果：每個卡片獨立顯示圖片，無法形成完整拼圖
- *
- *    b) 使用固定寬高比：
- *       結果：在不同螢幕尺寸下會失真
- *
- *    c) 使用 scale(1.1)：
- *       結果：這是一種取巧方式，並非真正解決問題
- *
- * 3. 當前方案（2024/03）：
- *    - 使用 max/min 函數根據視窗比例動態調整
- *    - 當前結果：
- *      * 畫面較寬時：成功！圖片填滿且不失真
- *      * 畫面較窄時：圖片不失真，但上下有留白
- *
- * 4. 注意事項：
- *    - 不要再回到「圖片填滿但失真」的方案
- *    - 不要再回到「完全不失真但有留白」的方案
- *    - 需要在保持當前「較寬時成功」的基礎上，解決「較窄時留白」的問題
- */
 const CardsContainer = styled.div<{
   aspectRatio: number;
-  viewportRatio: number;
   viewportHeight: number;
   viewportWidth: number;
 }>`
   position: relative;
-  width: ${(props) => {
-    const widthFromHeight = `${props.aspectRatio * 100}vh`;
-    const fullWidth = "100vw";
-    return props.viewportRatio > props.aspectRatio
-      ? `max(${widthFromHeight}, ${fullWidth})`
-      : `min(${widthFromHeight}, ${fullWidth})`;
-  }};
-  height: ${(props) => {
-    const heightFromWidth = `${100 / props.aspectRatio}vw`;
-    const fullHeight = "100vh";
-    return props.viewportRatio > props.aspectRatio
-      ? `max(${heightFromWidth}, ${fullHeight})`
-      : `min(${heightFromWidth}, ${fullHeight})`;
-  }};
+  width: 100%;
+  aspect-ratio: ${(props) => props.aspectRatio};
   transform: ${(props) => {
-    if (props.viewportRatio < props.aspectRatio) {
-      // 當畫面較窄時，計算需要的縮放比例
-      const actualHeight = props.viewportWidth / props.aspectRatio;
-      const scale = props.viewportHeight / actualHeight;
+    const viewportRatio = props.viewportWidth / props.viewportHeight;
+    if (viewportRatio < props.aspectRatio) {
+      const scale =
+        (props.viewportHeight * props.aspectRatio) / props.viewportWidth;
       return `scale(${scale})`;
     }
     return "none";
@@ -99,7 +58,6 @@ const CardsContainer = styled.div<{
 `;
 
 const Card = styled(motion.div)<{
-  backgroundImage: string;
   row: number;
   col: number;
   totalRows: number;
@@ -108,6 +66,7 @@ const Card = styled(motion.div)<{
   borderColor: string;
   borderWidth: number;
   overlayTextSize: number;
+  backgroundImage: string;
 }>`
   position: absolute;
   width: ${(props) => `${100 / props.totalCols}%`};
@@ -128,29 +87,15 @@ const Card = styled(motion.div)<{
   font-weight: bold;
   container-type: size;
   overflow: hidden;
+  background-image: url(${(props) => props.backgroundImage});
+  background-size: ${(props) =>
+    `${props.totalCols * 100}% ${props.totalRows * 100}%`};
+  background-position: ${(props) =>
+    `${props.col * -100}% ${props.row * -100}%`};
 
   &::after {
-    content: "";
-    position: absolute;
-    top: -${(props) => props.row * 100}%;
-    left: -${(props) => props.col * 100}%;
-    width: ${(props) => props.totalCols * 100}%;
-    height: ${(props) => props.totalRows * 100}%;
-    background-image: url(${(props) => props.backgroundImage});
-    background-size: 100% 100%;
-    z-index: 0;
-  }
-
-  &::before {
     content: attr(data-text);
     font-size: ${(props) => `${props.overlayTextSize}cqw`};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-    z-index: 1;
   }
 `;
 
@@ -218,7 +163,9 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
     { row: number; col: number; delay: number }[]
   >([]);
   const [currentStage, setCurrentStage] = useState(stage);
-  const [imageAspectRatio, setImageAspectRatio] = useState(16 / 9);
+  const [imageAspectRatio, setImageAspectRatio] = useState(
+    STYLE_CONSTANTS.DEFAULT_IMAGE_ASPECT_RATIO
+  );
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -235,11 +182,6 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
       return () => window.removeEventListener("resize", updateSize);
     }
   }, []);
-
-  // 計算 viewport ratio
-  const viewportRatio = viewportSize.height
-    ? viewportSize.width / viewportSize.height
-    : 9 / 16;
 
   useEffect(() => {
     // 載入圖片並獲取其實際比例
@@ -282,7 +224,6 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
     <Container backgroundImage={backgroundImage} aspectRatio={imageAspectRatio}>
       <CardsContainer
         aspectRatio={imageAspectRatio}
-        viewportRatio={viewportRatio}
         viewportHeight={viewportSize.height}
         viewportWidth={viewportSize.width}
       >
@@ -290,7 +231,6 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
           {cards.map(({ row, col, delay }) => (
             <Card
               key={`${row}-${col}`}
-              backgroundImage={backgroundImage}
               row={row}
               col={col}
               totalRows={gridSize.rows}
@@ -299,6 +239,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
               borderColor={cardBorderColor}
               borderWidth={cardBorderWidth}
               overlayTextSize={overlayTextSize}
+              backgroundImage={backgroundImage}
               data-text={overlayText}
               initial={{ opacity: 0 }}
               animate={{ opacity: delay === Infinity ? 0 : 1 }}
