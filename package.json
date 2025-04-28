@@ -18,7 +18,7 @@
     "card",
     "reveal"
   ],
-  "author": "",
+  "author": "renddi@relab.cc",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0",
