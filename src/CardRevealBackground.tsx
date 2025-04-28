@@ -26,8 +26,7 @@ interface CardRevealBackgroundProps {
   animationPattern?: "center" | "topLeft" | "random";
   delayBetweenCards?: number;
   stage?: Stage;
-  overlayText?: string;
-  overlayTextSize?: number;
+  renderOverlay?: () => React.ReactNode;
   remainCards?: number;
   onAnimationComplete?: () => void;
 }
@@ -79,7 +78,6 @@ const Card = styled(motion.div)<{
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
-  overlayTextSize: number;
   backgroundImage: string;
 }>`
   position: absolute;
@@ -101,11 +99,6 @@ const Card = styled(motion.div)<{
     `${props.col * -100}% ${props.row * -100}%`};
   border-radius: ${(props) =>
     `${props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT / (props.totalRows * 2)}cqw`};
-
-  &::before {
-    content: attr(data-text);
-    font-size: ${(props) => `${props.overlayTextSize}cqw`};
-  }
 
   &::after {
     content: "";
@@ -193,8 +186,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   delayBetweenCards = 0.15,
   stage = STAGES.INITIAL,
   remainCards,
-  overlayText,
-  overlayTextSize = 50,
+  renderOverlay,
   onAnimationComplete,
 }) => {
   const [cards, setCards] = useState<
@@ -286,9 +278,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
               borderRadius={cardBorderRadius}
               borderColor={cardBorderColor}
               borderWidth={cardBorderWidth}
-              overlayTextSize={overlayTextSize}
               backgroundImage={backgroundImage}
-              data-text={overlayText}
               initial={{ opacity: 0 }}
               animate={{
                 opacity:
@@ -312,7 +302,9 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
                   onAnimationComplete?.();
                 }
               }}
-            />
+            >
+              {renderOverlay?.()}
+            </Card>
           ))}
         </AnimatePresence>
       </CardsContainer>

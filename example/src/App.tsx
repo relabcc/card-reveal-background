@@ -11,16 +11,14 @@ function App() {
   const [selectedImage, setSelectedImage] = useState(DEFAULT_IMAGES[0]);
   const [rows, setRows] = useState(3);
   const [columns, setColumns] = useState(3);
-  const [borderRadius, setBorderRadius] = useState(10);
-  const [borderWidth, setBorderWidth] = useState(3);
+  const [borderRadius, setBorderRadius] = useState(5);
+  const [borderWidth, setBorderWidth] = useState(1);
   const [animationDuration, setAnimationDuration] = useState(1);
   const [animationPattern, setAnimationPattern] = useState<
     "center" | "topLeft" | "random"
   >("random");
   const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
   const [stage, setStage] = useState<Stage>(STAGES.INITIAL);
-  const [overlayText, setOverlayText] = useState("?");
-  const [overlayTextSize, setOverlayTextSize] = useState(50);
 
   useEffect(() => {
     const windowWidth = window.innerWidth;
@@ -83,26 +81,6 @@ function App() {
             <option value="reveal">顯示剩餘卡片</option>
           </select>
         </label> */}
-        <label>
-          覆蓋文字：
-          <input
-            type="text"
-            value={overlayText}
-            onChange={(e) => setOverlayText(e.target.value)}
-            placeholder="輸入要顯示的文字"
-          />
-        </label>
-        <label>
-          文字大小：
-          <input
-            type="number"
-            min="10"
-            max="100"
-            value={overlayTextSize}
-            onChange={(e) => setOverlayTextSize(Number(e.target.value))}
-          />
-          %
-        </label>
         <label>
           列數：
           <input
@@ -180,8 +158,7 @@ function App() {
           animationPattern={animationPattern}
           delayBetweenCards={delayBetweenCards}
           stage={stage}
-          overlayText={overlayText}
-          overlayTextSize={overlayTextSize}
+          renderOverlay={() => <div>Hello</div>}
           onAnimationComplete={() => console.log("Animation completed!")}
         />
       </div>
