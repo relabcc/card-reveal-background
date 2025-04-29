@@ -24,6 +24,7 @@ interface CardRevealBackgroundProps {
   cardBorderWidth?: number;
   animationDuration?: number;
   animationPattern?: "center" | "topLeft" | "random";
+  startCell?: { row: number; col: number };
   delayBetweenCards?: number;
   stage?: Stage;
   renderOverlay?: () => React.ReactNode;
@@ -98,7 +99,10 @@ const Card = styled(motion.div)<{
   background-position: ${(props) =>
     `${props.col * -100}% ${props.row * -100}%`};
   border-radius: ${(props) =>
-    `${props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT / (props.totalRows * 2)}cqw`};
+    `${
+      (props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT) /
+      (props.totalRows * 2)
+    }cqw`};
 
   &::after {
     content: "";
@@ -121,57 +125,31 @@ const calculateDelay = (
   row: number,
   col: number,
   gridSize: { rows: number; columns: number },
-  pattern: "center" | "topLeft" | "random",
+  startCell: { row: number; col: number } | undefined,
   delayBetweenCards: number,
   stage: Stage
 ) => {
-  switch (pattern) {
-    case "center": {
-      const centerRow = (gridSize.rows - 1) / 2;
-      const centerCol = (gridSize.columns - 1) / 2;
-      const distance = Math.sqrt(
-        Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
-      );
-      // initial stage: 從外到內出現
-      // reveal stage: 從內到外出現
-      return stage === STAGES.INITIAL
-        ? (Math.max(gridSize.rows, gridSize.columns) - distance) *
-            delayBetweenCards
-        : distance * delayBetweenCards;
-    }
-    case "topLeft": {
-      const maxDistance = gridSize.rows + gridSize.columns - 2;
-      const distance = row + col;
-      // initial stage: 從右下到左上出現
-      // reveal stage: 從左上到右下出現
-      return stage === STAGES.INITIAL
-        ? (maxDistance - distance) * delayBetweenCards
-        : distance * delayBetweenCards;
-    }
-    case "random": {
-      const centerRow = Math.floor(gridSize.rows / 2);
-      const centerCol = Math.floor(gridSize.columns / 2);
+  const centerRow = startCell ? startCell.row : Math.floor(gridSize.rows / 2);
+  const centerCol = startCell
+    ? startCell.col
+    : Math.floor(gridSize.columns / 2);
 
-      // 如果是中心卡片，延遲為 0
-      if (row === centerRow && col === centerCol) {
-        return 0;
-      }
+  // 如果是中心卡片，延遲為 0
+  if (row === centerRow && col === centerCol) {
+    return 0;
+  }
 
-      // 其他卡片根據階段決定延遲
-      if (stage === STAGES.INITIAL) {
-        return Infinity;
-      } else if (stage === STAGES.REVEAL) {
-        return (
-          Math.random() *
-          delayBetweenCards *
-          Math.max(gridSize.rows, gridSize.columns)
-        );
-      } else {
-        return 0;
-      }
-    }
-    default:
-      return 0;
+  // 其他卡片根據階段決定延遲
+  if (stage === STAGES.INITIAL) {
+    return Infinity;
+  } else if (stage === STAGES.REVEAL) {
+    return (
+      Math.random() *
+      delayBetweenCards *
+      Math.max(gridSize.rows, gridSize.columns)
+    );
+  } else {
+    return 0;
   }
 };
 
@@ -182,7 +160,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   cardBorderColor = "#ffffff",
   cardBorderWidth = 2,
   animationDuration = 0.5,
-  animationPattern = "center",
+  startCell,
   delayBetweenCards = 0.15,
   stage = STAGES.INITIAL,
   remainCards,
@@ -241,7 +219,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
           row,
           col,
           gridSize,
-          animationPattern,
+          startCell,
           delayBetweenCards,
           currentStage
         );
@@ -249,12 +227,10 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
       }
     }
 
-    if (animationPattern === "random") {
-      newCards.sort((a, b) => a.delay - b.delay);
-    }
+    newCards.sort((a, b) => a.delay - b.delay);
 
     setCards(newCards);
-  }, [gridSize, animationPattern, delayBetweenCards, currentStage]);
+  }, [gridSize, delayBetweenCards, currentStage]);
 
   return (
     <Container

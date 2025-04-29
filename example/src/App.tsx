@@ -56,21 +56,6 @@ function App() {
             ))}
           </select>
         </label>
-        <label>
-          動畫模式：
-          <select
-            value={animationPattern}
-            onChange={(e) =>
-              setAnimationPattern(
-                e.target.value as "center" | "topLeft" | "random"
-              )
-            }
-          >
-            <option value="center">從中心開始</option>
-            <option value="topLeft">從左上角開始</option>
-            <option value="random">隨機順序</option>
-          </select>
-        </label>
         {/* <label>
           動畫階段：
           <select
@@ -160,6 +145,10 @@ function App() {
           stage={stage}
           renderOverlay={() => <div>Hello</div>}
           onAnimationComplete={() => console.log("Animation completed!")}
+          startCell={{
+            row: Math.floor(rows * 0.6),
+            col: Math.floor(columns * 0.6),
+          }}
         />
       </div>
     </>

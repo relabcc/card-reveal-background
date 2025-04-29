@@ -22,7 +22,7 @@ function App() {
       cardBorderColor="#ffffff"
       cardBorderWidth={2}
       animationDuration={0.5}
-      animationPattern="random"
+      startCell={{ row: 3, column: 2 }}
       delayBetweenCards={0.15}
       stage={STAGES.INITIAL}
       renderOverlay={() => <div>Custom Overlay</div>}
@@ -42,12 +42,12 @@ function App() {
 | cardBorderColor | string | '#ffffff' | 卡片邊框的顏色 |
 | cardBorderWidth | number | 2 | 卡片邊框的寬度（像素） |
 | animationDuration | number | 0.5 | 每張卡片的動畫持續時間（秒） |
-| animationPattern | 'center' \| 'topLeft' \| 'random' | 'center' | 卡片出現的動畫模式 |
+| startCell | { row: number; column: number } | undefined | 初始卡片的座標 |
 | delayBetweenCards | number | 0.15 | 卡片之間的延遲時間（秒） |
 | stage | 'initial' \| 'reveal' \| 'done' | 'initial' | 動畫的當前階段 |
 | remainCards | number | undefined | 保留的卡片數量，用於控制動畫完成時機 |
 | renderOverlay | () => React.ReactNode | undefined | 自定義卡片內容的渲染函數 |
-| onAnimationComplete | () => void | undefined | 動畫完成時的回調函數 |
+| onAnimationComplete | () => void | undefined | 最後一張卡片動畫完成時的回調函數 |
 
 ## 動畫階段
 
@@ -56,12 +56,6 @@ function App() {
 1. **initial**: 初始階段，卡片從外到內或從右下到左上出現
 2. **reveal**: 揭示階段，卡片從內到外或從左上到右下出現
 3. **done**: 完成階段，顯示完整的背景圖片
-
-## 動畫模式
-
-- **center**: 從中心向外擴散
-- **topLeft**: 從左上角開始
-- **random**: 隨機順序出現
 
 ## 特點
 
