@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import styled from "@emotion/styled";
 import { motion, AnimatePresence } from "framer-motion";
 
 // 內部使用的樣式常數
 const STYLE_CONSTANTS = {
-  BORDER_SIZE_COEFFICIENT: 1,
   DEFAULT_IMAGE_ASPECT_RATIO: 9 / 16,
 } as const;
 
@@ -16,10 +15,25 @@ export const STAGES = {
 
 export type Stage = (typeof STAGES)[keyof typeof STAGES];
 
+interface CardSize {
+  width: number;
+  height: number;
+}
+
+const calculateGridSize = (
+  viewportSize: { width: number; height: number },
+  cardSize: CardSize
+): { rows: number; columns: number } => {
+  const columns = Math.ceil(viewportSize.width / cardSize.width);
+  const rows = Math.ceil(viewportSize.height / cardSize.height);
+  return { rows, columns };
+};
+
 interface CardRevealBackgroundProps {
   backgroundImage: string;
   backgroundColor?: string;
   gridSize?: { rows: number; columns: number };
+  cardSize?: CardSize;
   cardBorderRadius?: number;
   cardBorderColor?: string;
   cardBorderWidth?: number;
@@ -44,33 +58,10 @@ const Container = styled.div<{
   position: relative;
   overflow: hidden;
   background: ${(props) => props.backgroundColor ?? ""};
-  display: flex;
-  align-items: center;
-  justify-content: center;
   ${({ backgroundImage }) =>
     backgroundImage ? `background-image: url(${backgroundImage});` : ""}
   background-size: cover;
   background-position: center;
-`;
-
-const CardsContainer = styled.div<{
-  aspectRatio: number;
-  viewportHeight: number;
-  viewportWidth: number;
-}>`
-  position: relative;
-  width: 100%;
-  aspect-ratio: ${(props) => props.aspectRatio};
-  transform: ${(props) => {
-    const viewportRatio = props.viewportWidth / props.viewportHeight;
-    if (viewportRatio < props.aspectRatio) {
-      const scale =
-        (props.viewportHeight * props.aspectRatio) / props.viewportWidth;
-      return `scale(${scale})`;
-    }
-    return "none";
-  }};
-  transform-origin: center;
 `;
 
 const Card = styled(motion.div)<{
@@ -82,12 +73,15 @@ const Card = styled(motion.div)<{
   borderColor: string;
   borderWidth: number;
   backgroundImage: string;
+  viewportSize: { width: number; height: number };
+  aspectRatio: number;
+  cardSize: CardSize;
 }>`
   position: absolute;
-  width: ${(props) => `${100 / props.totalCols}%`};
-  height: ${(props) => `${100 / props.totalRows}%`};
-  left: ${(props) => `${(props.col / props.totalCols) * 100}%`};
-  top: ${(props) => `${(props.row / props.totalRows) * 100}%`};
+  width: ${(props) => props.cardSize.width}px;
+  height: ${(props) => props.cardSize.height}px;
+  left: ${(props) => props.col * props.cardSize.width}px;
+  top: ${(props) => props.row * props.cardSize.height}px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,15 +90,36 @@ const Card = styled(motion.div)<{
   container-type: size;
   overflow: hidden;
   background-image: url(${(props) => props.backgroundImage});
-  background-size: ${(props) =>
-    `${props.totalCols * 100}% ${props.totalRows * 100}%`};
-  background-position: ${(props) =>
-    `${props.col * -100}% ${props.row * -100}%`};
-  border-radius: ${(props) =>
-    `${
-      (props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT) /
-      (props.totalRows * 2)
-    }cqw`};
+  ${(props) => {
+    // 計算 cover 模式下的圖片尺寸
+    const viewportRatio = props.viewportSize.width / props.viewportSize.height;
+    let scale = 1;
+    if (viewportRatio < props.aspectRatio) {
+      scale =
+        (props.viewportSize.height * props.aspectRatio) /
+        props.viewportSize.width;
+    }
+    const width = props.viewportSize.width * scale;
+    const height = width / props.aspectRatio;
+
+    // 計算圖片在 cover 模式下的偏移量
+    const offsetX = (width - props.viewportSize.width) / 2;
+    const offsetY = (height - props.viewportSize.height) / 2;
+
+    // 計算這個卡片在整個網格中的位置
+    const cardX = props.col * props.cardSize.width;
+    const cardY = props.row * props.cardSize.height;
+
+    // 計算背景圖片的位置
+    const backgroundX = -(cardX + offsetX);
+    const backgroundY = -(cardY + offsetY);
+
+    return `
+      background-size: ${width}px ${height}px;
+      background-position: ${backgroundX}px ${backgroundY}px;
+    `;
+  }}
+  border-radius: ${(props) => props.borderRadius}px;
 
   &::after {
     content: "";
@@ -114,12 +129,8 @@ const Card = styled(motion.div)<{
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    border: ${(props) =>
-      `${
-        props.borderWidth * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT
-      }cqw solid ${props.borderColor}`};
-    border-radius: ${(props) =>
-      `${props.borderRadius * STYLE_CONSTANTS.BORDER_SIZE_COEFFICIENT}cqw`};
+    border: ${(props) => `${props.borderWidth}px solid ${props.borderColor}`};
+    border-radius: ${(props) => props.borderRadius}px;
   }
 `;
 
@@ -136,7 +147,7 @@ const calculateDelay = (
     ? startCell.col
     : Math.floor(gridSize.columns / 2);
 
-  // 如果是中心卡片，延遲為 0
+  // 如果是起始卡片，延遲為 0
   if (row === centerRow && col === centerCol) {
     return 0;
   }
@@ -158,7 +169,8 @@ const calculateDelay = (
 export const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   backgroundImage,
   backgroundColor,
-  gridSize = { rows: 4, columns: 4 },
+  gridSize: propGridSize,
+  cardSize,
   cardBorderRadius = 8,
   cardBorderColor = "#ffffff",
   cardBorderWidth = 2,
@@ -178,6 +190,26 @@ export const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
     STYLE_CONSTANTS.DEFAULT_IMAGE_ASPECT_RATIO
   );
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+
+  // 計算實際的 gridSize
+  const gridSize = useMemo(() => {
+    if (cardSize) {
+      return calculateGridSize(viewportSize, cardSize);
+    }
+    return propGridSize ?? { rows: 4, columns: 4 };
+  }, [cardSize, viewportSize, propGridSize]);
+
+  // 計算實際的卡片尺寸
+  const actualCardSize = useMemo(() => {
+    if (cardSize) {
+      return cardSize;
+    }
+    return {
+      width: viewportSize.width / gridSize.columns,
+      height: viewportSize.height / gridSize.rows,
+    };
+  }, [cardSize, viewportSize, gridSize]);
+
   const cardsToDone =
     remainCards ??
     Math.min(
@@ -245,51 +277,45 @@ export const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
       aspectRatio={imageAspectRatio}
       stage={currentStage}
     >
-      <CardsContainer
-        aspectRatio={imageAspectRatio}
-        viewportHeight={viewportSize.height}
-        viewportWidth={viewportSize.width}
-      >
-        <AnimatePresence>
-          {cards.map(({ row, col, delay }, index) => (
-            <Card
-              key={`${row}-${col}`}
-              row={row}
-              col={col}
-              totalRows={gridSize.rows}
-              totalCols={gridSize.columns}
-              borderRadius={cardBorderRadius}
-              borderColor={cardBorderColor}
-              borderWidth={cardBorderWidth}
-              backgroundImage={backgroundImage}
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity:
-                  delay === Infinity || currentStage === STAGES.DONE ? 0 : 1,
-              }}
-              transition={{
-                duration: animationDuration,
-                delay:
-                  delay === Infinity || currentStage === STAGES.DONE
-                    ? 0
-                    : delay,
-                ease: "easeOut",
-              }}
-              onAnimationComplete={() => {
-                if (index === cards.length - cardsToDone) {
-                  if (currentStage === STAGES.REVEAL) {
-                    setCurrentStage(STAGES.DONE);
-                    onAnimationComplete?.();
-                  }
+      <AnimatePresence>
+        {cards.map(({ row, col, delay }, index) => (
+          <Card
+            key={`${row}-${col}`}
+            row={row}
+            col={col}
+            totalRows={gridSize.rows}
+            totalCols={gridSize.columns}
+            borderRadius={cardBorderRadius}
+            borderColor={cardBorderColor}
+            borderWidth={cardBorderWidth}
+            backgroundImage={backgroundImage}
+            viewportSize={viewportSize}
+            aspectRatio={imageAspectRatio}
+            cardSize={actualCardSize}
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity:
+                delay === Infinity || currentStage === STAGES.DONE ? 0 : 1,
+            }}
+            transition={{
+              duration: animationDuration,
+              delay:
+                delay === Infinity || currentStage === STAGES.DONE ? 0 : delay,
+              ease: "easeOut",
+            }}
+            onAnimationComplete={() => {
+              if (index === cards.length - cardsToDone) {
+                if (currentStage === STAGES.REVEAL) {
+                  setCurrentStage(STAGES.DONE);
+                  onAnimationComplete?.();
                 }
-              }}
-            >
-              {renderOverlay?.()}
-            </Card>
-          ))}
-        </AnimatePresence>
-      </CardsContainer>
+              }
+            }}
+          >
+            {renderOverlay?.()}
+          </Card>
+        ))}
+      </AnimatePresence>
     </Container>
   );
 };
-

@@ -9,34 +9,21 @@ const DEFAULT_IMAGES = [
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(DEFAULT_IMAGES[0]);
-  const [rows, setRows] = useState(3);
-  const [columns, setColumns] = useState(3);
-  const [borderRadius, setBorderRadius] = useState(5);
-  const [borderWidth, setBorderWidth] = useState(1);
+  const [cardWidth, setCardWidth] = useState(300);
+  const [cardHeight, setCardHeight] = useState(400);
+  const [borderRadius, setBorderRadius] = useState(10);
+  const [borderWidth, setBorderWidth] = useState(2);
   const [animationDuration, setAnimationDuration] = useState(1);
-  const [animationPattern, setAnimationPattern] = useState<
-    "center" | "topLeft" | "random"
-  >("random");
   const [delayBetweenCards, setDelayBetweenCards] = useState(0.25);
   const [stage, setStage] = useState<Stage>(STAGES.INITIAL);
 
-  useEffect(() => {
-    const windowWidth = window.innerWidth;
-    if (windowWidth < 768) {
-      setColumns(3);
-    } else {
-      setColumns(7);
-    }
-  }, []);
-
   const renderKey = [
     selectedImage,
-    rows,
-    columns,
+    cardWidth,
+    cardHeight,
     borderRadius,
     borderWidth,
     animationDuration,
-    animationPattern,
     delayBetweenCards,
   ].join("-");
 
@@ -67,23 +54,23 @@ function App() {
           </select>
         </label> */}
         <label>
-          列數：
+          卡片寬度：
           <input
             type="number"
             min="2"
             max="20"
-            value={rows}
-            onChange={(e) => setRows(Number(e.target.value))}
+            value={cardWidth}
+            onChange={(e) => setCardWidth(Number(e.target.value))}
           />
         </label>
         <label>
-          行數：
+          卡片高度：
           <input
             type="number"
             min="2"
             max="20"
-            value={columns}
-            onChange={(e) => setColumns(Number(e.target.value))}
+            value={cardHeight}
+            onChange={(e) => setCardHeight(Number(e.target.value))}
           />
         </label>
         <label>
@@ -136,19 +123,14 @@ function App() {
         <CardRevealBackground
           key={renderKey}
           backgroundImage={selectedImage}
-          gridSize={{ rows, columns }}
+          cardSize={{ width: cardWidth, height: cardHeight }}
           cardBorderRadius={borderRadius}
           cardBorderWidth={borderWidth}
           animationDuration={animationDuration}
-          animationPattern={animationPattern}
           delayBetweenCards={delayBetweenCards}
           stage={stage}
           renderOverlay={() => <div>Hello</div>}
           onAnimationComplete={() => console.log("Animation completed!")}
-          startCell={{
-            row: Math.floor(rows * 0.6),
-            col: Math.floor(columns * 0.6),
-          }}
         />
       </div>
     </>
