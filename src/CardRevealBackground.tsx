@@ -155,7 +155,7 @@ const calculateDelay = (
   }
 };
 
-const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
+export const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   backgroundImage,
   backgroundColor,
   gridSize = { rows: 4, columns: 4 },
@@ -293,4 +293,3 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   );
 };
 
-export default CardRevealBackground;
