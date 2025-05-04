@@ -18,6 +18,7 @@ export type Stage = (typeof STAGES)[keyof typeof STAGES];
 
 interface CardRevealBackgroundProps {
   backgroundImage: string;
+  backgroundColor?: string;
   gridSize?: { rows: number; columns: number };
   cardBorderRadius?: number;
   cardBorderColor?: string;
@@ -33,6 +34,7 @@ interface CardRevealBackgroundProps {
 }
 
 const Container = styled.div<{
+  backgroundColor?: string;
   backgroundImage: string;
   aspectRatio: number;
   stage: Stage;
@@ -41,7 +43,7 @@ const Container = styled.div<{
   height: 100%;
   position: relative;
   overflow: hidden;
-  background: black;
+  background: ${(props) => props.backgroundColor ?? ""};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,6 +157,7 @@ const calculateDelay = (
 
 const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   backgroundImage,
+  backgroundColor,
   gridSize = { rows: 4, columns: 4 },
   cardBorderRadius = 8,
   cardBorderColor = "#ffffff",
@@ -208,6 +211,9 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
 
   useEffect(() => {
     setCurrentStage(stage);
+    if (stage === STAGES.DONE) {
+      onAnimationComplete?.();
+    }
   }, [stage]);
 
   useEffect(() => {
@@ -235,6 +241,7 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
   return (
     <Container
       backgroundImage={currentStage === STAGES.DONE ? backgroundImage : ""}
+      backgroundColor={backgroundColor}
       aspectRatio={imageAspectRatio}
       stage={currentStage}
     >
@@ -272,10 +279,8 @@ const CardRevealBackground: React.FC<CardRevealBackgroundProps> = ({
                 if (index === cards.length - cardsToDone) {
                   if (currentStage === STAGES.REVEAL) {
                     setCurrentStage(STAGES.DONE);
+                    onAnimationComplete?.();
                   }
-                }
-                if (index === cards.length - 1) {
-                  onAnimationComplete?.();
                 }
               }}
             >

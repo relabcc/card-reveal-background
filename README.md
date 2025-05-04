@@ -22,7 +22,7 @@ function App() {
       cardBorderColor="#ffffff"
       cardBorderWidth={2}
       animationDuration={0.5}
-      startCell={{ row: 3, column: 2 }}
+      startCell={{ row: 3, col: 2 }}
       delayBetweenCards={0.15}
       stage={STAGES.INITIAL}
       renderOverlay={() => <div>Custom Overlay</div>}
@@ -37,17 +37,18 @@ function App() {
 | 屬性名稱 | 類型 | 預設值 | 說明 |
 |----------|------|--------|------|
 | backgroundImage | string | 必填 | 背景圖片的 URL |
+| backgroundColor | string | 選填 | 背景顏色
 | gridSize | { rows: number; columns: number } | { rows: 4, columns: 4 } | 卡片網格的行數和列數 |
 | cardBorderRadius | number | 8 | 卡片的圓角大小（像素） |
 | cardBorderColor | string | '#ffffff' | 卡片邊框的顏色 |
 | cardBorderWidth | number | 2 | 卡片邊框的寬度（像素） |
 | animationDuration | number | 0.5 | 每張卡片的動畫持續時間（秒） |
-| startCell | { row: number; column: number } | undefined | 初始卡片的座標 |
+| startCell | { row: number; col: number } | undefined | 初始卡片的座標 |
 | delayBetweenCards | number | 0.15 | 卡片之間的延遲時間（秒） |
 | stage | 'initial' \| 'reveal' \| 'done' | 'initial' | 動畫的當前階段 |
 | remainCards | number | undefined | 保留的卡片數量，用於控制動畫完成時機 |
 | renderOverlay | () => React.ReactNode | undefined | 自定義卡片內容的渲染函數 |
-| onAnimationComplete | () => void | undefined | 最後一張卡片動畫完成時的回調函數 |
+| onAnimationComplete | () => void | undefined | stage 轉換為 done 時的回傳函數 |
 
 ## 動畫階段
 
